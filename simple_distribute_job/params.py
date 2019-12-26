@@ -21,13 +21,13 @@ class Params:
 
         self.CURRENT_PC = pc_name
 
-        is_out = (len(self.cfg['out_list']) == len(self.cfg['job_list']))
+        self.is_out = (len(self.cfg['out_list']) == len(self.cfg['job_list']))
 
         self.JOB_LIST = []
         for i in range(len(self.cfg['job_list'])):
             prefix = " ".join(self.cfg['run_prefix'])
             postfix = " ".join(self.cfg['run_postfix'])
-            if is_out:
+            if self.is_out:
                 postfix += self.cfg['out_list'][i]
 
             run_cmd = prefix + self.cfg['job_list'][i] + " " + postfix
@@ -36,3 +36,10 @@ class Params:
         self.N_ROW = len(self.JOB_LIST)
 
         self.script_local_path = script_path
+
+    def get_out_path(self, idx):
+        local_out_path = self.cfg['out_list'][idx]
+        server_out_path = self.cfg['server_upload_path'] + self.cfg['job_list'][idx]
+
+        return local_out_path, server_out_path
+

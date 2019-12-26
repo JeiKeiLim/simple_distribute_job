@@ -177,6 +177,48 @@ class SimpleDistributeJob:
 
         self.log(" ....... Job command : %s" % self.params.JOB_LIST[idx], v_level=3)
 
+    def upload_result(self, idx, delete=False):
+        local_path, server_path = self.params.get_out_path(idx)
+
+        if self.verbose >= 2:
+            upload_callback = SimpleDistributeJob.upload_callback
+        else:
+            upload_callback = None
+
+        while True:
+            try:
+                self.sftp.put(local_path, server_path, confirm=True, callback=upload_callback)
+                break
+            except OSError:
+                self.log("Upload failed! try again ...", v_level=2)
+                time.sleep(np.random.randint(1, 5))
+
+        if delete:
+            os.remove(local_path)
+
+    @staticmethod
+    def get_data_size_format(size):
+        if size > 1024*1024:
+            size /= 1024/1024
+            postfix = "MB"
+        elif size > 1024:
+            size /= 1024
+            postfix = "kB"
+        else:
+            postfix = "B"
+
+        return size, postfix
+
+    @staticmethod
+    def upload_callback(sent_bytes, total_bytes):
+        sent, sent_postfix = SimpleDistributeJob.get_data_size_format(sent_bytes)
+        total, total_postfix = SimpleDistributeJob.get_data_size_format(total_bytes)
+
+        msg = "..... %d%s/%d%s has sent(%.2f%%)" % (sent, sent_postfix,
+                                                      total, total_postfix,
+                                                      (sent/total)*100)
+        print(msg)
+
     def do_the_job(self, idx):
         self.log_progress(idx, prefix="Start ")
 
@@ -186,7 +228,8 @@ class SimpleDistributeJob:
         _, updated_state = self.update_status(Params.STATUS_DONE, idx, force=True)
         self.unlock_server()
 
-        # TODO : Upload the result of the job
+        if self.params.is_out:
+            self.upload_result(idx, delete=True)
 
         self.done_n_job += 1
         self.log_progress(idx, prefix="done ")
@@ -209,7 +252,6 @@ class SimpleDistributeJob:
                     self.log("Something went wrong ... (job_idx/state)(%d/%d)" % (job_idx, state_written), v_level=2)
 
                 self.do_the_job(job_idx)
-                break
 
             except Exception:
                 if self.verbose >= 2:
