@@ -12,6 +12,8 @@ parser.add_argument('--config', type=str, default=None,
                     help="Config json file path. Default : config.json")
 parser.add_argument('--mode', type=str, default="worker",
                     help="worker : process job, watcher : watch job processes")
+parser.add_argument('--max_job', type=int, default=-1,
+                    help="Maximum job number to be done in this machine. Default : -1 (No maximum job limit)")
 
 args = parser.parse_args()
 
@@ -21,7 +23,7 @@ if args.config is None:
 
 params = Params(script_path, config=args.config, pc_name=args.pc_name)
 
-sd_job = SimpleDistributeJob(params)
+sd_job = SimpleDistributeJob(params, max_job=args.max_job)
 sd_job.verbose = args.verbose
 
 if args.mode == "worker":

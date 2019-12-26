@@ -12,7 +12,7 @@ from simple_distribute_job.params import Params
 class SimpleDistributeJob:
     DID_I_LOCK_SERVER = False
 
-    def __init__(self, params):
+    def __init__(self, params, max_job=-1):
         self.params = params
         self.sftp = pysftp.Connection(self.params.MAIN_SERVER,
                                       username=self.params.USER_NAME, password=self.params.PASSWORD)
@@ -20,6 +20,7 @@ class SimpleDistributeJob:
         self.remain_n_job = params.N_ROW
         self.done_n_job = 0
         self.verbose = 0
+        self.max_job = max_job
 
     def lock_server(self):
 
@@ -252,6 +253,11 @@ class SimpleDistributeJob:
                     self.log("Something went wrong ... (job_idx/state)(%d/%d)" % (job_idx, state_written), v_level=2)
 
                 self.do_the_job(job_idx)
+
+                if self.max_job > 0:
+                    if self.done_n_job >= self.max_job:
+                        self.log("My job here is done. (%d jobs done)" % self.done_n_job)
+                        break
 
             except Exception:
                 if self.verbose >= 2:
