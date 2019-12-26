@@ -180,7 +180,7 @@ class SimpleDistributeJob:
     def do_the_job(self, idx):
         self.log_progress(idx, prefix="Start ")
 
-        subprocess.run([self.params.JOB_LIST[idx]])
+        subprocess.run(self.params.JOB_LIST[idx], shell=True)
 
         self.wait_server()
         _, updated_state = self.update_status(Params.STATUS_DONE, idx, force=True)
@@ -209,6 +209,7 @@ class SimpleDistributeJob:
                     self.log("Something went wrong ... (job_idx/state)(%d/%d)" % (job_idx, state_written), v_level=2)
 
                 self.do_the_job(job_idx)
+                break
 
             except Exception:
                 if self.verbose >= 2:
