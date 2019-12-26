@@ -22,7 +22,10 @@ class SimpleDistributeJob:
         self.verbose = 0
 
     def lock_server(self):
-        global DID_I_LOCK_SERVER
+
+        if not SimpleDistributeJob.DID_I_LOCK_SERVER and self.is_server_locked():
+            self.wait_server(keep_lock=False)
+
         i = 0
         while True:
             i += 1
@@ -32,14 +35,15 @@ class SimpleDistributeJob:
                 break
             except:
                 self.log("Locking server failed! try again ...(%d)" % i, v_level=1)
-                self.wait_server(keep_lock=True)
+                self.wait_server(keep_lock=False)
 
-        DID_I_LOCK_SERVER = True
+        SimpleDistributeJob.DID_I_LOCK_SERVER = True
 
     def unlock_server(self):
-        global DID_I_LOCK_SERVER
-        self.sftp.execute('rm ' + self.params.SERVER_PROCESS_PATH + 'lock')
-        DID_I_LOCK_SERVER = False
+        if SimpleDistributeJob.DID_I_LOCK_SERVER:
+            self.sftp.execute('rm ' + self.params.SERVER_PROCESS_PATH + 'lock')
+
+        SimpleDistributeJob.DID_I_LOCK_SERVER = False
 
     def is_server_locked(self):
         return self.sftp.exists(self.params.SERVER_PROCESS_PATH + 'lock')
@@ -99,6 +103,7 @@ class SimpleDistributeJob:
         i = 0
         path += '.gzip'
         status_path = hashlib.md5(str(time.time()).encode()).hexdigest() + '.gzip'
+        status_path = self.params.script_local_path + '/intermediate/%s' % status_path
         data.to_csv(status_path, index=False, header=False, compression='gzip')
         while True:
             i += 1
@@ -181,6 +186,8 @@ class SimpleDistributeJob:
         _, updated_state = self.update_status(Params.STATUS_DONE, idx, force=True)
         self.unlock_server()
 
+        # TODO : Upload the result of the job
+
         self.done_n_job += 1
         self.log_progress(idx, prefix="done ")
 
@@ -207,7 +214,7 @@ class SimpleDistributeJob:
                 if self.verbose >= 2:
                     logging.exception(self.get_server_time() + " Exception from %s" % self.params.CURRENT_PC)
 
-                if DID_I_LOCK_SERVER:
+                if SimpleDistributeJob.DID_I_LOCK_SERVER:
                     self.unlock_server()
 
         self.close()

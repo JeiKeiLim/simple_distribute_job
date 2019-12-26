@@ -9,7 +9,7 @@ class Params:
 
     STAT_COLUMN_NAME = ['job_name', 'status', 'assigned', 's_timestamp', 'e_timestamp']
 
-    def __init__(self, config='config.json', pc_name='default_pc'):
+    def __init__(self, script_path, config='config.json', pc_name='default_pc'):
         with open(config) as f:
             self.cfg = json.load(f)
 
@@ -34,3 +34,5 @@ class Params:
             self.JOB_LIST.append(run_cmd)
 
         self.N_ROW = len(self.JOB_LIST)
+
+        self.script_local_path = script_path
