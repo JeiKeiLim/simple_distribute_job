@@ -32,6 +32,8 @@ class JobWatcher:
                 print("All work done!")
                 break
 
+            server_time = self.sd_job.get_server_time()
+
             workers = self.status[self.status['assigned'] != 'Unassigned']['assigned'].unique()
 
             worker_n_jobs = [[(c_job['assigned'] == worker).sum(), (d_job['assigned'] == worker).sum()]
@@ -39,7 +41,8 @@ class JobWatcher:
 
             worker_s_time = [[c_job['assigned'].values[i], datetime.fromtimestamp(c_job['s_timestamp'].values[i]).strftime("%Y-%m-%d %H:%M:%S")]
                              for i in range(c_job.shape[0])]
-            print("-"*20)
+            
+            print("%s" % server_time)
             print("Currently working %d jobs" % nc_job )
             print("Jobs done : %d" % nd_job )
             print("Remaining jobs : %d" % nr_job)
