@@ -3,6 +3,7 @@
   "user_name": "username",
   "password": "password",
   "server_default_path": "/default/path/to/work/on/",
+  "server_upload_path": "/upload/path/to/server/",
   "run_prefix": [
     "/run/script/or/command/path/preferably",
     "/fixed/argument/if/necessary"
