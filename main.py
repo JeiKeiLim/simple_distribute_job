@@ -1,7 +1,6 @@
 import argparse
 
-from simple_distribute_job import SimpleDistributeJob
-from simple_distribute_job import Params
+from simple_distribute_job import SimpleDistributeJob, Params, JobWatcher
 import os
 
 parser = argparse.ArgumentParser(description="Distribution worker")
@@ -11,6 +10,8 @@ parser.add_argument("--verbose", type=int, default=0,
                     help="Level of log detail. -1 : silence, 0: default, 1: detailed, 2: error included")
 parser.add_argument('--config', type=str, default=None,
                     help="Config json file path. Default : config.json")
+parser.add_argument('--mode', type=str, default="worker",
+                    help="worker : process job, watcher : watch job processes")
 
 args = parser.parse_args()
 
@@ -23,4 +24,8 @@ params = Params(script_path, config=args.config, pc_name=args.pc_name)
 sd_job = SimpleDistributeJob(params)
 sd_job.verbose = args.verbose
 
-sd_job.run()
+if args.mode == "worker":
+    sd_job.run()
+else:
+    watcher = JobWatcher(sd_job)
+    watcher.run()
