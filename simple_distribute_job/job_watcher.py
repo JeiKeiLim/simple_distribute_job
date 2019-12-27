@@ -6,25 +6,29 @@ from datetime import datetime
 class JobWatcher:
     def __init__(self, sd_job, update_time=60):
         self.sd_job = sd_job
-        self.status = sd_job.get_process_status()
         self.update_time = update_time
+
+        self.status = None
+        self.r_job = None
+        self.d_job = None
+        self.c_job = None
+        self.update_status()
+
 
     def update_status(self):
         self.status = self.sd_job.get_process_status()
+        self.r_job = self.status[self.status['status'] == Params.STATUS_TODO]
+        self.d_job = self.status[self.status['status'] == Params.STATUS_DONE]
+        self.c_job = self.status[self.status['status'] == Params.STATUS_IN_PROGRESS]
 
-    def get_info(self):
-        self.update_status()
-        remain_job = self.status[self.status['status'] == Params.STATUS_TODO]
-        done_job = self.status[self.status['status'] == Params.STATUS_DONE]
-        current_job = self.status[self.status['status'] == Params.STATUS_IN_PROGRESS]
+    def get_remain_time(self, update_status=False):
+        if update_status:
+            self.update_status()
 
-        return current_job, remain_job, done_job
-
-    def get_remain_time(self, c_job, r_job, d_job):
-        d_job_c = d_job.copy()
+        d_job_c = self.d_job.copy()
         # Process time for jobs to be done
         d_job_c['p_time'] = (d_job_c['e_timestamp'] - d_job_c['s_timestamp'])
-        c_job_e = c_job.copy()
+        c_job_e = self.c_job.copy()
 
         for worker in d_job_c['assigned'].unique():
             w_p_time = d_job_c[d_job_c['assigned'] == worker]['p_time']
@@ -39,7 +43,7 @@ class JobWatcher:
         # Estimated time - (current time - start time)
         current_job_estimated_time = (c_job_e['p_time'] - (time.time() - c_job_e['s_timestamp'])).sum() / c_job_e.shape[0]
         # Mean estimated time * number of remain jobs / number of current workers
-        remain_job_estimated_time = (c_job_e['p_time'].mean() * r_job.shape[0]) / c_job_e['assigned'].unique().shape[0]
+        remain_job_estimated_time = (c_job_e['p_time'].mean() * self.r_job.shape[0]) / c_job_e['assigned'].unique().shape[0]
         total_estimated_time = current_job_estimated_time + remain_job_estimated_time
 
         estimated_day = int(total_estimated_time / 60 / 60 / 24)
@@ -50,7 +54,7 @@ class JobWatcher:
         return estimated_day, estimated_hour, estimated_min, estimated_sec
 
     def print_each_state(self):
-        print("States of each job (▢ : to do, ☑ : in progress, ■ : done, ☒ : error)")
+        print("▢ : to do, ☑ : in progress, ■ : done, ☒ : error")
         for stat, i in zip(self.status['status'], range(self.status.shape[0])):
             if stat == Params.STATUS_TODO:
                 print("▢", end='', sep='')
@@ -66,11 +70,11 @@ class JobWatcher:
 
         print('')
 
-    def print_progress_bar(self, max_n=50):
+    def print_progress_bar(self, max_n=40):
         progress = ((self.status['status'] == Params.STATUS_DONE).sum() / self.status.shape[0])
         pn = max_n * progress
 
-        print('Progress : [', sep='', end='')
+        print('[', sep='', end='')
 
         for i in range(max_n):
             if i < pn:
@@ -80,13 +84,38 @@ class JobWatcher:
 
         print('] %.2f%%' % (progress*100))
 
+    def print_worker_list(self, detail=False):
+        workers = self.status[self.status['assigned'] != 'Unassigned']['assigned'].unique()
+        worker_n_jobs = [[(self.c_job['assigned'] == worker).sum(), (self.d_job['assigned'] == worker).sum()]
+                         for worker in workers]
+        worker_s_time = [[self.c_job['assigned'].values[i],
+                          datetime.fromtimestamp(self.c_job['s_timestamp'].values[i]).strftime("%Y-%m-%d %H:%M:%S")]
+                         for i in range(self.c_job.shape[0])]
+
+        print(':: Worker list - (current/done) ::')
+        for i in range(len(workers)):
+
+            print("(%d) : %s (%d/%d), " % (i, workers[i], worker_n_jobs[i][0], worker_n_jobs[i][1]), end='')
+
+            if not detail and (i+1) % 2 == 0:
+                print('')
+
+            if detail:
+                for ws_time in worker_s_time:
+                    if workers[i] == ws_time[0]:
+                        print("Started at %s" % ws_time[1])
+                        break
+
+        if not detail and (i+1) % 2 == 1:
+            print('')
+
     def run(self):
         while True:
-            c_job, r_job, d_job = self.get_info()
+            self.update_status()
 
-            nc_job = c_job.shape[0]
-            nr_job = r_job.shape[0]
-            nd_job = d_job.shape[0]
+            nc_job = self.c_job.shape[0]
+            nr_job = self.r_job.shape[0]
+            nd_job = self.d_job.shape[0]
 
             if nr_job == 0:
                 print("All work done!")
@@ -94,30 +123,13 @@ class JobWatcher:
 
             server_time = self.sd_job.get_server_time()
 
-            workers = self.status[self.status['assigned'] != 'Unassigned']['assigned'].unique()
-
-            worker_n_jobs = [[(c_job['assigned'] == worker).sum(), (d_job['assigned'] == worker).sum()]
-                             for worker in workers]
-
-            worker_s_time = [[c_job['assigned'].values[i], datetime.fromtimestamp(c_job['s_timestamp'].values[i]).strftime("%Y-%m-%d %H:%M:%S")]
-                             for i in range(c_job.shape[0])]
-
             print("\n%s" % server_time)
-            print("--- Remain/Current/Total Jobs : %d/%d/%d" % (nr_job, nc_job, self.status.shape[0]))
-            print("--- Jobs done : %d" % nd_job)
+            print("-- Done/Remain/Current/Total Jobs : %d/%d/%d/%d" % (nd_job, nr_job, nc_job, self.status.shape[0]))
 
             print('')
-            print(':: Worker list (name : current / done) ::')
-            for i in range(len(workers)):
-                print("%s : %d / %d" % (workers[i], worker_n_jobs[i][0], worker_n_jobs[i][1]), end='')
+            self.print_worker_list(detail=False)
 
-                for ws_time in worker_s_time:
-                    if workers[i] == ws_time[0]:
-                        print(" - Started at %s" % ws_time[1], end='')
-                        break
-                print('')
-
-            d, h, m, s = self.get_remain_time(c_job, r_job, d_job)
+            d, h, m, s = self.get_remain_time()
             print('')
             print("Estimated time to be finished : %d Days, %02d:%02d:%02d" % (d, h, m, s))
 
