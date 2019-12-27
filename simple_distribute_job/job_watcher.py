@@ -124,7 +124,7 @@ class JobWatcher:
             server_time = self.sd_job.get_server_time()
 
             print("\n%s" % server_time)
-            print("-- Done/Remain/Current/Total Jobs : %d/%d/%d/%d" % (nd_job, nr_job, nc_job, self.status.shape[0]))
+            print("-- Current/Remain/Done/Total Jobs : %d/%d/%d/%d" % (nc_job, nr_job, nd_job, self.status.shape[0]))
 
             print('')
             self.print_worker_list(detail=False)
