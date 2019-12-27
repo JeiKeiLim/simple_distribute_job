@@ -12,6 +12,8 @@ parser.add_argument('--config', type=str, default=None,
                     help="Config json file path. Default : config.json")
 parser.add_argument('--mode', type=str, default="worker",
                     help="worker : process job, watcher : watch job processes")
+parser.add_argument('--wt', type=int, default=60,
+                    help="Update time(second) for watcher mode. Default : 60")
 parser.add_argument('--max_job', type=int, default=-1,
                     help="Maximum job number to be done in this machine. Default : -1 (No maximum job limit)")
 
@@ -29,5 +31,5 @@ sd_job.verbose = args.verbose
 if args.mode == "worker":
     sd_job.run()
 else:
-    watcher = JobWatcher(sd_job)
+    watcher = JobWatcher(sd_job, update_time=args.wt)
     watcher.run()
