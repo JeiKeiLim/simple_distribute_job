@@ -3,7 +3,7 @@ import argparse
 from simple_distribute_job import SimpleDistributeJob, Params, JobWatcher
 import os
 
-parser = argparse.ArgumentParser(description="Distribution worker")
+parser = argparse.ArgumentParser(description="Simple Distributed Job Scheduler")
 parser.add_argument("pc_name", type=str,
                     help='Name of the pc')
 parser.add_argument("--verbose", type=int, default=0,
