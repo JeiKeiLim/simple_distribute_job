@@ -7,6 +7,7 @@ import hashlib
 import os
 import subprocess
 from simple_distribute_job.params import Params
+from simple_distribute_job.sftp_uploader import SftpUploader
 
 
 class SimpleDistributeJob:
@@ -180,45 +181,23 @@ class SimpleDistributeJob:
 
     def upload_result(self, idx, delete=False):
         local_path, server_path = self.params.get_out_path(idx)
+        uploader = SftpUploader(self.sftp, local_path, server_path)
 
-        if self.verbose >= 2:
-            upload_callback = SimpleDistributeJob.upload_callback
-        else:
-            upload_callback = None
-
+        i = 0
         while True:
-            try:
-                self.sftp.put(local_path, server_path, confirm=True, callback=upload_callback)
+            i += 1
+
+            upload_result = uploader.upload(self.verbose)
+
+            if upload_result:
                 break
-            except OSError:
-                self.log("Upload failed! try again ...", v_level=2)
+            else:
+                self.log("Upload failed! try again ... (%d)" % i, v_level=2)
                 time.sleep(np.random.randint(1, 5))
+                continue
 
         if delete:
             os.remove(local_path)
-
-    @staticmethod
-    def get_data_size_format(size):
-        if size > 1024*1024:
-            size /= 1024/1024
-            postfix = "MB"
-        elif size > 1024:
-            size /= 1024
-            postfix = "kB"
-        else:
-            postfix = "B"
-
-        return size, postfix
-
-    @staticmethod
-    def upload_callback(sent_bytes, total_bytes):
-        sent, sent_postfix = SimpleDistributeJob.get_data_size_format(sent_bytes)
-        total, total_postfix = SimpleDistributeJob.get_data_size_format(total_bytes)
-
-        msg = "..... %d%s/%d%s has sent(%.2f%%)" % (sent, sent_postfix,
-                                                      total, total_postfix,
-                                                      (sent/total)*100)
-        print(msg)
 
     def do_the_job(self, idx):
         self.log_progress(idx, prefix="Start ")

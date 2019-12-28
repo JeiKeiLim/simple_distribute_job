@@ -11,8 +11,8 @@ parser.add_argument("--verbose", type=int, default=0,
 parser.add_argument('--config', type=str, default=None,
                     help="Config json file path. Default : config.json")
 parser.add_argument('--mode', type=str, default="worker",
-                    help="worker : process job, watcher : watch job processes")
-parser.add_argument('--wt', type=int, default=60,
+                    help="worker : process job, watcher : watch job processes, init : initialize the job states")
+parser.add_argument('--wt', type=float, default=60.0,
                     help="Update time(second) for watcher mode. Default : 60")
 parser.add_argument('--max_job', type=int, default=-1,
                     help="Maximum job number to be done in this machine. Default : -1 (No maximum job limit)")
@@ -30,6 +30,13 @@ sd_job.verbose = args.verbose
 
 if args.mode == "worker":
     sd_job.run()
+elif args.mode == "init":
+    sd_job.lock_server()
+    sd_job.init_progress()
+    sd_job.unlock_server()
+
+    sd_job.log("Initialization finished!", 0)
+    sd_job.close()
 else:
     watcher = JobWatcher(sd_job, update_time=args.wt)
     watcher.run()

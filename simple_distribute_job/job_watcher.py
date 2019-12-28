@@ -4,7 +4,7 @@ from datetime import datetime
 
 
 class JobWatcher:
-    def __init__(self, sd_job, update_time=60):
+    def __init__(self, sd_job, update_time=60.0):
         self.sd_job = sd_job
         self.update_time = update_time
 
@@ -13,7 +13,6 @@ class JobWatcher:
         self.d_job = None
         self.c_job = None
         self.update_status()
-
 
     def update_status(self):
         self.status = self.sd_job.get_process_status()
@@ -25,7 +24,12 @@ class JobWatcher:
         if update_status:
             self.update_status()
 
+        if self.d_job.shape[0] == 0 or self.c_job.shape[0] == 0:
+            return -1, -1, -1, -1
+
         d_job_c = self.d_job.copy()
+        d_job_c = d_job_c.query("s_timestamp != 0 & e_timestamp != 0")
+
         # Process time for jobs to be done
         d_job_c['p_time'] = (d_job_c['e_timestamp'] - d_job_c['s_timestamp'])
         c_job_e = self.c_job.copy()
@@ -46,9 +50,9 @@ class JobWatcher:
         remain_job_estimated_time = (c_job_e['p_time'].mean() * self.r_job.shape[0]) / c_job_e['assigned'].unique().shape[0]
         total_estimated_time = current_job_estimated_time + remain_job_estimated_time
 
-        estimated_day = int(total_estimated_time / 60 / 60 / 24)
-        estimated_hour = int(total_estimated_time / 60 / 60) % 24
-        estimated_min = int(total_estimated_time / 60 ) % 60
+        estimated_day = int(total_estimated_time / (60 * 60 * 24))
+        estimated_hour = int(total_estimated_time / (60 * 60)) % 24
+        estimated_min = int(total_estimated_time / 60) % 60
         estimated_sec = int(total_estimated_time) % 60
 
         return estimated_day, estimated_hour, estimated_min, estimated_sec
@@ -106,7 +110,7 @@ class JobWatcher:
                         print("Started at %s" % ws_time[1])
                         break
 
-        if not detail and (i+1) % 2 == 1:
+        if not detail and len(workers) > 0 and (i+1) % 2 == 1:
             print('')
 
     def run(self):
@@ -137,3 +141,5 @@ class JobWatcher:
             self.print_each_state()
 
             time.sleep(self.update_time)
+
+        self.sd_job.close()
