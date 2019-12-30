@@ -93,6 +93,30 @@ class SimpleDistributeJob:
         self.remain_n_job = np.sum(status['status'] != Params.STATUS_TODO)
         return status
 
+    def reset_status_by_query(self, query):
+        self.wait_server(keep_lock=True)
+        status = self.get_process_status()
+        candidates = status.query(query).index.values
+        if candidates.shape[0] > 0:
+            status.loc[candidates, 'status'] = 0
+            status.loc[candidates, 'assigned'] = "Unassigned"
+            status.loc[candidates, 's_timestamp'] = 0
+            status.loc[candidates, 'e_timestamp'] = 0
+
+            self.upload_pandas(status, self.params.SERVER_PROCESS_PATH + 'process_status.csv')
+        self.unlock_server()
+
+        return candidates.shape[0]
+
+    def clean_status(self, pc_name):
+        n_cleaned = self.reset_status_by_query("assigned == '%s' and (s_timestamp == 0 or e_timestamp == 0)" % pc_name)
+
+        self.log("Cleaned %d records from agent %s!" % (n_cleaned, pc_name), v_level=0)
+
+    def reset_status(self, pc_name):
+        n_cleaned = self.reset_status_by_query("assigned == '%s'" % pc_name)
+        self.log("Done reset %d records from agent %s!" % (n_cleaned, pc_name), v_level=0)
+
     # WARNING do not call this method until absolutely sure it is needed.
     def init_progress(self):
         # WARNING do not call this method until absolutely sure it is needed.

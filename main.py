@@ -5,13 +5,14 @@ import os
 
 parser = argparse.ArgumentParser(description="Simple Distributed Job Scheduler")
 parser.add_argument("pc_name", type=str,
-                    help='Name of the pc')
+                    help='Name of the agent')
 parser.add_argument("--verbose", type=int, default=0,
                     help="Level of log detail. -1 : silence, 0: default, 1: detailed, 2: error included")
 parser.add_argument('--config', type=str, default=None,
                     help="Config json file path. Default : config.json")
 parser.add_argument('--mode', type=str, default="worker",
-                    help="worker : process job, watcher : watch job processes, init : initialize the job states")
+                    help="init : initialize the job states, worker : process job, watcher : watch job processes, "
+                         "clean : clean agent's job status, reset : reset agent's job status")
 parser.add_argument('--wt', type=float, default=60.0,
                     help="Update time(second) for watcher mode. Default : 60")
 parser.add_argument('--max_job', type=int, default=-1,
@@ -36,6 +37,12 @@ elif args.mode == "init":
     sd_job.unlock_server()
 
     sd_job.log("Initialization finished!", 0)
+    sd_job.close()
+elif args.mode == "clean":
+    sd_job.clean_status(args.pc_name)
+    sd_job.close()
+elif args.mode == "reset":
+    sd_job.reset_status(args.pc_name)
     sd_job.close()
 else:
     watcher = JobWatcher(sd_job, update_time=args.wt)
