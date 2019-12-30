@@ -1,7 +1,7 @@
 # Simple Distributed Job Scheduler
 - Simple distributed job scheduler for multiple servers with only SSH. No additions.
 
-<img src="docs/demo01.gif" width=480 height=300/>
+<img src="https://github.com/JeiKeiLim/mygifcontainer/raw/master/simple_distribute_job/demo01.gif" width=480 height=300/>
 
 # How to use
 **USAGE**
@@ -36,7 +36,7 @@
 - **Run watcher mode**
 	python main.py agent_name --config config.json --mode watcher
 
-<img src="docs/demo02.gif" width=480 height=246/>
+<img src="https://github.com/JeiKeiLim/mygifcontainer/raw/master/simple_distribute_job/demo02.gif" width=480 height=246/>
 
 
 
