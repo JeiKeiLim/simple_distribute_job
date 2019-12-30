@@ -45,5 +45,5 @@ elif args.mode == "reset":
     sd_job.reset_status(args.pc_name)
     sd_job.close()
 else:
-    watcher = JobWatcher(sd_job, update_time=args.wt)
+    watcher = JobWatcher(sd_job, update_time=args.wt, verbose=sd_job.verbose)
     watcher.run()

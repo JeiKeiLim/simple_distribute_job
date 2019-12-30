@@ -4,7 +4,7 @@ from datetime import datetime
 
 
 class JobWatcher:
-    def __init__(self, sd_job, update_time=60.0):
+    def __init__(self, sd_job, update_time=60.0, verbose=0):
         self.sd_job = sd_job
         self.update_time = update_time
 
@@ -12,6 +12,7 @@ class JobWatcher:
         self.r_job = None
         self.d_job = None
         self.c_job = None
+        self.verbose = verbose
         self.update_status()
 
     def update_status(self):
@@ -99,7 +100,8 @@ class JobWatcher:
         print(':: Worker list - (current/done) ::')
         for i in range(len(workers)):
 
-            print("(%d) : %s (%d/%d), " % (i, workers[i], worker_n_jobs[i][0], worker_n_jobs[i][1]), end='')
+            if worker_n_jobs[i][0] > 0 or detail:
+                print("(%d) : %s (%d/%d), " % (i, workers[i], worker_n_jobs[i][0], worker_n_jobs[i][1]), end='')
 
             if not detail and (i+1) % 2 == 0:
                 print('')
@@ -131,7 +133,7 @@ class JobWatcher:
             print("-- Current/Done/Remain/Total Jobs : %d/%d/%d/%d" % (nc_job, nd_job, nr_job, self.status.shape[0]))
 
             print('')
-            self.print_worker_list(detail=False)
+            self.print_worker_list(detail=(self.verbose > 0))
 
             d, h, m, s = self.get_remain_time()
             print('')
