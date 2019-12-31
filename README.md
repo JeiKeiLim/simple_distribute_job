@@ -18,8 +18,9 @@
 	  --verbose VERBOSE  Level of log detail. -1 : silence, 0: default, 1:
 	                     detailed, 2: error included
 	  --config CONFIG    Config json file path. Default : config.json
-	  --mode MODE        worker : process job, watcher : watch job processes, init
-	                     : initialize the job states
+      --mode MODE        init : initialize the job states, worker : process job,
+                         watcher : watch job processes, clean : clean agent's job
+                         status, reset : reset agent's job status
 	  --wt WT            Update time(second) for watcher mode. Default : 60
 	  --max_job MAX_JOB  Maximum job number to be done in this machine. Default :
 	                     -1 (No maximum job limit)
